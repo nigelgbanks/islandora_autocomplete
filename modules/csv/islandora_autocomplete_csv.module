@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * @file
+ *
+ * Contains the hooks this module responds to. As well as any
+ * functions that need to be present for every page request.
+ */
+
+/**
+ * Implements hook_delete_autocomplete_url().
+ *
+ * Called when a autocomplete url is deleted, used to notify autocomplete source modules so that
+ * they may do the nesscary clean up required.
+ *
+ * Note:
+ *  The database entry will be removed by the cascading delete.
+ *
+ * @param string $url_id
+ *   The ID of the url that is to be deleted.
+ */
+function islandora_autocomplete_csv_delete_autocomplete_url($url_id) {
+  module_load_include('inc', 'islandora_autocomplete_csv', 'islandora_autocomplete_csv.db');
+  $source = islandora_autocomplete_csv_db_get_url($url_id);
+  if ($source !== FALSE) {
+    file_delete($source->filename);
+  }
+}
+
+/**
+ * Implements islandora_autocomplete_url_source();
+ *
+ * Query's the CSV file associated with the given URL.
+ *
+ * Return an alphabetically ordered list of values that match the query value.
+ *
+ * @param int $url_id
+ *   The unique identifier for the Autocomplete URL.
+ * @param string $value
+ *   The values to query against the stored CSV.
+ *
+ * @return array
+ */
+function islandora_autocomplete_url_query_csv($url_id, $value) {
+  /**
+   * @todo Query the given file if found and return the normalized list of values.
+   *
+   * For now this is stubbed.
+   */
+  return array(
+    'a' => 'A',
+    'aa' => 'AA',
+    'b' => 'b',
+  );
+}

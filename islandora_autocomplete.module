@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ *
+ * Contains the hooks this module responds to. As well as any
+ * functions that need to be present for every page request.
+ */
+define('MENU_ISLANDORA_AUTOCOMPLETE', 'islandora/autocomplete/%/%');
+define('MENU_ISLANDORA_AUTOCOMPLETE_ADMIN', 'admin/content/autocomplete');
+define('MENU_ISLANDORA_AUTOCOMPLETE_LIST_URLS', 'admin/content/autocomplete/list');
+define('MENU_ISLANDORA_AUTOCOMPLETE_ADD_URL', 'admin/content/autocomplete/add');
+define('MENU_ISLANDORA_AUTOCOMPLETE_URL', 'admin/content/autocomplete/%');
+define('MENU_ISLANDORA_AUTOCOMPLETE_EDIT_URL', 'admin/content/autocomplete/%/edit');
+define('MENU_ISLANDORA_AUTOCOMPLETE_DELETE_URL', 'admin/content/autocomplete/%/delete');
+define('PERM_ISLANDORA_AUTOCOMPLETE_ADMIN', 'administer islandora autocomplete');
+
+/**
+ * Implements hook_menu().
+ */
+function islandora_autocomplete_menu() {
+  return array(
+    MENU_ISLANDORA_AUTOCOMPLETE => array(
+      'file' => 'autocomplete.inc',
+      'page callback' => 'islandora_autocomplete_query',
+      'page arguments' => array(2, 3),
+      'access callback' => 'user_access',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK,
+    ),
+    MENU_ISLANDORA_AUTOCOMPLETE_ADMIN => array(
+      'title' => 'Autocomplete URL\'s',
+      'description' => 'Manage Autocomplete URL\'s.',
+      'file' => 'islandora_autocomplete.admin.inc',
+      'page callback' => 'islandora_autocomplete_admin',
+      'access callback' => 'user_access',
+      'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
+      'type' => MENU_NORMAL_ITEM,
+    ),
+    MENU_ISLANDORA_AUTOCOMPLETE_LIST_URLS => array(
+      'title' => 'List',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10,
+    ),
+    MENU_ISLANDORA_AUTOCOMPLETE_ADD_URL => array(
+      'title' => 'Add Autocomplete URL',
+      'description' => 'Add an Autocomplete URL.',
+      'file' => 'islandora_autocomplete.admin.inc',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('islandora_autocomplete_url_form'),
+      'access callback' => 'user_access',
+      'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
+      'type' => MENU_LOCAL_TASK,
+    ),
+    MENU_ISLANDORA_AUTOCOMPLETE_URL => array(
+      'title' => 'Edit',
+      'description' => 'Edit a Autocomplete URL.',
+      'file' => 'islandora_autocomplete.admin.inc',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('islandora_autocomplete_url_form', 3),
+      'access callback' => 'user_access',
+      'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
+      'type' => MENU_CALLBACK,
+    ),
+    MENU_ISLANDORA_AUTOCOMPLETE_EDIT_URL => array(
+      'title' => 'Edit',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+    ),
+    MENU_ISLANDORA_AUTOCOMPLETE_DELETE_URL => array(
+      'title' => 'Delete',
+      'file' => 'islandora_autocomplete.admin.inc',
+      'page arguments' => array('islandora_autocomplete_delete_confirm', 3),
+      'access callback' => 'user_access',
+      'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
+      'type' => MENU_CALLBACK,
+    )
+  );
+}
+
+/**
+ * Implements hook_perm().
+ */
+function islandora_autocomplete_perm() {
+  return array(
+    PERM_ISLANDORA_AUTOCOMPLETE_ADMIN,
+  );
+}
+
+/**
+ * Implements hook_help().
+ */
+function islandora_autocomplete_help($path, $arg) {
+  switch ($path) {
+    case MENU_ISLANDORA_AUTOCOMPLETE_ADMIN:
+      return '<p>' . t('Below is a list of all the autocomplete url\'s on your site.') . '</p>';
+      break;
+    default:
+      return '';
+  }
+}

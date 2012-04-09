@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * @file
+ *
+ * Install hooks for this module.
+ */
+module_load_include('inc', 'islandora_autocomplete_csv', 'islandora_autocomplete_csv.db');
+module_load_include('inc', 'islandora_autocomplete', 'islandora_autocomplete.db');
+
+/**
+ * Implementation of hook_install().
+ */
+function islandora_autocomplete_csv_install() {
+  drupal_install_schema('islandora_autocomplete_csv');
+  islandora_autocomplete_add_foreign_key_constraints_for(TABLE_ISLANDORA_AUTOCOMPLETE_CSV);
+  islandora_autocomplete_add_source('csv');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function islandora_autocomplete_csv_uninstall() {
+  $urls = islandora_autocomplete_csv_db_get_urls();
+  while ($url = db_fetch_object($urls)) {
+    file_delete($url->filename);
+  }
+  drupal_uninstall_schema(TABLE_ISLANDORA_AUTOCOMPLETE_CSV);
+  islandora_autocomplete_remove_source('csv');
+}
+
+/**
+ * Implementation of hook_schema().
+ *
+ * @return array
+ */
+function islandora_autocomplete_csv_schema() {
+  return array(
+    TABLE_ISLANDORA_AUTOCOMPLETE_CSV => array(
+      'description' => t('The main table for storing islandora autocomplete urls.'),
+      'fields' => array(
+        'id' => array(
+          'type' => 'serial',
+          'not null' => TRUE,
+        ),
+        'url_id' => array(
+          'type' => 'int',
+          'not null' => TRUE
+        ),
+        'filename' => array(
+          'type' => 'varchar',
+          'length' => 256,
+          'not null' => TRUE,
+        )
+      ),
+      'primary key' => array('id'),
+    )
+  );
+}

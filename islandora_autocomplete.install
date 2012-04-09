@@ -1,0 +1,64 @@
+<?php
+
+/**
+ * @file
+ *
+ * Install hooks for this module.
+ */
+module_load_include('inc', 'islandora_autocomplete', 'islandora_autocomplete.db');
+
+/**
+ * Implementation of hook_install().
+ */
+function islandora_autocomplete_install() {
+  drupal_install_schema('islandora_autocomplete');
+  // Only InnoDB supports foreign keys. Other formats fail silently.
+  db_query('ALTER TABLE `{' . TABLE_ISLANDORA_AUTOCOMPLETE . '}` ENGINE = InnoDB');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function islandora_autocomplete_uninstall() {
+  
+  drupal_uninstall_schema(TABLE_ISLANDORA_AUTOCOMPLETE);
+}
+
+/**
+ * Implementation of hook_schema().
+ *
+ * @return array
+ */
+function islandora_autocomplete_schema() {
+  return array(
+    TABLE_ISLANDORA_AUTOCOMPLETE => array(
+      'description' => t('The main table for storing islandora autocomplete urls.'),
+      'fields' => array(
+        'id' => array(
+          'type' => 'serial',
+          'not null' => TRUE,
+        ),
+        'name' => array(
+          'type' => 'varchar',
+          'length' => ISLANDORA_AUTOCOMPLETE_URL_MAX_NAME_LENGTH,
+          'not null' => TRUE
+        ),
+        'description' => array(
+          'type' => 'varchar',
+          'length' => ISLANDORA_AUTOCOMPLETE_URL_MAX_DESCRIPTION_LENGTH,
+          'not null' => TRUE,
+        ),
+        'source' => array(
+          'type' => 'varchar',
+          'length' => ISLANDORA_AUTOCOMPLETE_URL_MAX_SOURCE_NAME_LENGTH,
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('id'),
+      'indexes' => array(
+        'name' => array('name'),
+        'source' => array('source'),
+      )
+    )
+  );
+}

@@ -1,0 +1,49 @@
+Islandora Auto-complete allows users to define auto-complete URL's to be used in a 
+Drupal forms in conjuction with the #autocomplete property of form elements.
+
+Known Issues: When uninstalling this module uninstall all dependant modules first otherwise the 
+foreign key constraint will cause it to fail. 
+
+@todo store all tables that use foreign key references in the variable 
+table, remove the constraints when uninstalling.
+
+Limitations: Can't change the source of a url once it has been created. It must be deleted and recreated with a 
+different source.
+
+Available Hooks:
+
+Hook: 
+  Function:
+    hook_autocomplete_url_source
+  Parameters: 
+    none
+  Returns: 
+    An array with the given format:
+     array(
+      'name' => A human readable name for the source.
+      'type' => A machine readable name for the source.
+     );
+  Description:
+    This hook is meant to fetch any potentially matching values from the defined source.
+
+Hook: 
+  Function:
+    islandora_autocomplete_url_query_{source}
+  Parameters: 
+    int $url_id - The Autocomplete URL ID to query.
+    string $value - The value to query the source with.
+  Returns: 
+    An array formatted as in the manner described by the #autocomplete form field property.
+  Description:
+    This hook is meant to fetch any potentially matching values from the defined source.
+    
+Hook:
+    hook_delete_autocomplete_url
+  Parameters: 
+    int $url_id - The Autocomplete URL ID that will be deleted.
+  Returns: 
+    none
+  Description:
+    This hook is used to notify any modules that implement a source that the url they are referencing is to be deleted. 
+    This allows them clean up any fields or resources they allocated to that url.
+  
