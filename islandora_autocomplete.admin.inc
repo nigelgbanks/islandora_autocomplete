@@ -46,6 +46,7 @@ function islandora_autocomplete_admin() {
  *   The name of Autocomplete URL to update. If not preset this form will be used to create a new url.
  */
 function islandora_autocomplete_url_form(array &$form_state, $name = NULL) {
+  module_load_include('inc', 'content', 'includes/content.node_form');
   $sources = islandora_autocomplete_get_sources();
   if (empty($sources)) {
     drupal_set_message(t('No sources are defined, please install a module like "islandora autocomplete csv" so that a source can be defined.'), 'error');
@@ -59,6 +60,7 @@ function islandora_autocomplete_url_form(array &$form_state, $name = NULL) {
   /**
    * @todo handle the submisson of sources section of the form.
    */
+  $field = content_fields('filefield');
   return array(
     '#attributes' => array(
       'enctype' => "multipart/form-data"
@@ -92,10 +94,15 @@ function islandora_autocomplete_url_form(array &$form_state, $name = NULL) {
         'csv' => 'CSV',
       )
     ),
+    'csv' => array(
+      '#title' => 'CSV Upload',
+      '#type' => 'filefield_widget',
+      '#default_value' => 0,
+    ),
     'submit' => array(
       '#type' => 'submit',
       '#value' => t('Submit')
-    )
+    ),
   );
 }
 
