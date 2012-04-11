@@ -5,23 +5,30 @@
  *
  * Install hooks for this module.
  */
-module_load_include('inc', 'islandora_autocomplete', 'islandora_autocomplete.db');
+module_load_include('inc', 'islandora_autocomplete', 'includes/islandora_autocomplete.db');
 
 /**
  * Implementation of hook_install().
  */
 function islandora_autocomplete_install() {
   drupal_install_schema('islandora_autocomplete');
-  // Only InnoDB supports foreign keys. Other formats fail silently.
-  db_query('ALTER TABLE `{' . TABLE_ISLANDORA_AUTOCOMPLETE . '}` ENGINE = InnoDB');
+  $path = FILES_ISLANDORA_AUTOCOMPLETE;
+  file_check_directory($path, FILE_CREATE_DIRECTORY);
 }
 
 /**
  * Implementation of hook_uninstall().
  */
 function islandora_autocomplete_uninstall() {
-  
   drupal_uninstall_schema(TABLE_ISLANDORA_AUTOCOMPLETE);
+  $path = FILES_ISLANDORA_AUTOCOMPLETE;
+  if (file_check_directory($path)) {
+    $files = file_scan_directory($path, '.*');
+    foreach ($files as $file) {
+      unlink($file->filename);
+    }
+    rmdir($path);
+  }
 }
 
 /**

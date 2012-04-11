@@ -14,7 +14,7 @@ define('TABLE_ISLANDORA_AUTOCOMPLETE_CSV', 'islandora_autocomplete_csv');
  *   A database query result resource, or FALSE if the query was not
  *   executed correctly.
  */
-function islandora_autocomplete_csv_db_get_urls() {
+function islandora_autocomplete_csv_db_get_url_sources() {
   return db_query('SELECT * FROM {%s}', TABLE_ISLANDORA_AUTOCOMPLETE_CSV);
 }
 
@@ -28,7 +28,7 @@ function islandora_autocomplete_csv_db_get_urls() {
  *   An object representing the given autocomplete url csv source identified by name, or FALSE.
  *   The attributes of this object are the table fields selected by the query.
  */
-function islandora_autocomplete_csv_db_get_url($url_id) {
+function islandora_autocomplete_csv_db_get_url_source($url_id) {
   $result = db_query('SELECT * FROM {%s} WHERE url_id = %d', TABLE_ISLANDORA_AUTOCOMPLETE_CSV, $url_id);
   return $result !== FALSE ? db_fetch_object($result) : FALSE;
 }
@@ -46,8 +46,8 @@ function islandora_autocomplete_csv_db_get_url($url_id) {
  * @return boolean
  *   TRUE if successful FALSE otherwise.
  */
-function islandora_autocomplete_csv_db_add_url($url_id, $filename) {
-  if (db_result(db_query('SELECT count(id) FROM {%s} WHERE url_id = %d', ISLANDORA_AUTOCOMPLETE_TABLE, $url_id)) == 0) {
+function islandora_autocomplete_csv_db_add_url_source($url_id, $filename) {
+  if (db_result(db_query('SELECT count(id) FROM {%s} WHERE url_id = %d', TABLE_ISLANDORA_AUTOCOMPLETE_CSV, $url_id)) == 0) {
     $object = new stdClass();
     $object->url_id = $url_id;
     $object->filename = $filename;
@@ -71,13 +71,15 @@ function islandora_autocomplete_csv_db_add_url($url_id, $filename) {
  * @return boolean
  *   TRUE if successful FALSE otherwise.
  */
-function islandora_autocomplete_csv_db_update_url($id, $url_id, $filename) {
-  if (db_result(db_query('SELECT count(id) FROM {%s} WHERE id = %d', TABLE_ISLANDORA_AUTOCOMPLETE_CSV, $id)) == 1) {
+function islandora_autocomplete_csv_db_update_url_source($id, $url_id, $filename) {
+  $source = islandora_autocomplete_csv_db_get_url_source($url_id);
+  if ($source !== FALSE) {
+    file_delete($source->filename);
     $object = new stdClass();
     $object->id = $id;
     $object->url_id = $url_id;
     $object->filename = $filename;
-    return drupal_write_record(TABLE_ISLANDORA_AUTOCOMPLETE_CSV, $object);
+    return drupal_write_record(TABLE_ISLANDORA_AUTOCOMPLETE_CSV, $object, 'id');
   }
   return FALSE;
 }
@@ -85,9 +87,13 @@ function islandora_autocomplete_csv_db_update_url($id, $url_id, $filename) {
 /**
  * Deletes the given Autocomplete URL.
  *
- * @param int $id
+ * @param int $url_id
  *   The unique id of the URL to delete.
  */
-function islandora_autocomplete_csv_db_delete_url($id) {
-  db_query('DELETE FROM {%s} WHERE id = "%d"', TABLE_ISLANDORA_AUTOCOMPLETE_CSV, $id);
+function islandora_autocomplete_csv_db_delete_url_source($url_id) {
+  $source = islandora_autocomplete_csv_db_get_url_source($url_id);
+  if ($source !== FALSE) {
+    file_delete($source->filename);
+    db_query('DELETE FROM {%s} WHERE id = "%d"', TABLE_ISLANDORA_AUTOCOMPLETE_CSV, $source->id);
+  }
 }

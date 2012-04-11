@@ -6,14 +6,17 @@
  * Contains the hooks this module responds to. As well as any
  * functions that need to be present for every page request.
  */
-define('MENU_ISLANDORA_AUTOCOMPLETE', 'islandora/autocomplete/%/%');
+define('MENU_ISLANDORA_AUTOCOMPLETE', 'autocomplete');
 define('MENU_ISLANDORA_AUTOCOMPLETE_ADMIN', 'admin/content/autocomplete');
+define('MENU_ISLANDORA_AUTOCOMPLETE_AHAH_SOURCE', 'admin/content/autocomplete/ahah/source');
 define('MENU_ISLANDORA_AUTOCOMPLETE_LIST_URLS', 'admin/content/autocomplete/list');
 define('MENU_ISLANDORA_AUTOCOMPLETE_ADD_URL', 'admin/content/autocomplete/add');
 define('MENU_ISLANDORA_AUTOCOMPLETE_URL', 'admin/content/autocomplete/%');
+define('MENU_ISLANDORA_AUTOCOMPLETE_VIEW_URL', 'admin/content/autocomplete/%/view');
 define('MENU_ISLANDORA_AUTOCOMPLETE_EDIT_URL', 'admin/content/autocomplete/%/edit');
 define('MENU_ISLANDORA_AUTOCOMPLETE_DELETE_URL', 'admin/content/autocomplete/%/delete');
 define('PERM_ISLANDORA_AUTOCOMPLETE_ADMIN', 'administer islandora autocomplete');
+define('FILES_ISLANDORA_AUTOCOMPLETE', file_directory_path() . '/autocomplete');
 
 /**
  * Implements hook_menu().
@@ -21,17 +24,23 @@ define('PERM_ISLANDORA_AUTOCOMPLETE_ADMIN', 'administer islandora autocomplete')
 function islandora_autocomplete_menu() {
   return array(
     MENU_ISLANDORA_AUTOCOMPLETE => array(
-      'file' => 'autocomplete.inc',
+      'file' => 'includes/autocomplete.inc',
       'page callback' => 'islandora_autocomplete_query',
-      'page arguments' => array(2, 3),
       'access callback' => 'user_access',
       'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK,
+    ),
+    MENU_ISLANDORA_AUTOCOMPLETE_AHAH_SOURCE => array(
+      'file' => 'includes/islandora_autocomplete.admin.inc',
+      'page callback' => 'islandora_autocomplete_url_ahah_source',
+      'access callback' => 'user_access',
+      'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
       'type' => MENU_CALLBACK,
     ),
     MENU_ISLANDORA_AUTOCOMPLETE_ADMIN => array(
       'title' => 'Autocomplete URL\'s',
       'description' => 'Manage Autocomplete URL\'s.',
-      'file' => 'islandora_autocomplete.admin.inc',
+      'file' => 'includes/islandora_autocomplete.admin.inc',
       'page callback' => 'islandora_autocomplete_admin',
       'access callback' => 'user_access',
       'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
@@ -45,17 +54,27 @@ function islandora_autocomplete_menu() {
     MENU_ISLANDORA_AUTOCOMPLETE_ADD_URL => array(
       'title' => 'Add Autocomplete URL',
       'description' => 'Add an Autocomplete URL.',
-      'file' => 'islandora_autocomplete.admin.inc',
+      'file' => 'includes/islandora_autocomplete.admin.inc',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('islandora_autocomplete_url_form'),
       'access callback' => 'user_access',
       'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
       'type' => MENU_LOCAL_TASK,
     ),
+    MENU_ISLANDORA_AUTOCOMPLETE_VIEW_URL => array(
+      'title' => 'View',
+      'description' => 'View the Autocomplete URL Content.',
+      'file' => 'includes/islandora_autocomplete.admin.inc',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('islandora_autocomplete_url_view_form', 3),
+      'access callback' => 'user_access',
+      'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
+      'type' => MENU_CALLBACK,
+    ),
     MENU_ISLANDORA_AUTOCOMPLETE_URL => array(
       'title' => 'Edit',
       'description' => 'Edit a Autocomplete URL.',
-      'file' => 'islandora_autocomplete.admin.inc',
+      'file' => 'includes/islandora_autocomplete.admin.inc',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('islandora_autocomplete_url_form', 3),
       'access callback' => 'user_access',
@@ -68,7 +87,7 @@ function islandora_autocomplete_menu() {
     ),
     MENU_ISLANDORA_AUTOCOMPLETE_DELETE_URL => array(
       'title' => 'Delete',
-      'file' => 'islandora_autocomplete.admin.inc',
+      'file' => 'includes/islandora_autocomplete.admin.inc',
       'page arguments' => array('islandora_autocomplete_delete_confirm', 3),
       'access callback' => 'user_access',
       'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
