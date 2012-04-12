@@ -16,7 +16,7 @@
  *   The search query for the autocomplete.
  */
 function islandora_autocomplete_query($name, $query) {
-  module_load_include('inc', 'islandora_autocomplete', 'islandora_autocomplete.db');
+  module_load_include('inc', 'islandora_autocomplete', 'includes/islandora_autocomplete.db');
   $url = islandora_autocomplete_db_get_url_by_name($name);
   $results = $url ? islandora_autocomplete_query_source($url->id, $url->source, $query) : array();
   return drupal_json($results);
