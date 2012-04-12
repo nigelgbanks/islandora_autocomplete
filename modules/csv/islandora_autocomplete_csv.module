@@ -47,7 +47,7 @@ function islandora_autocomplete_url_query_csv($url_id, $query = '') {
     if ($handle) {
       while ($field = fgetcsv($handle)) {
         list($k, $v) = $field;
-        if (empty($query) || (strpos($v, $query) !== FALSE)) {
+        if (empty($query) || (strpos($v, $query) === 0)) {
           $fields[$k] = $v;
         }
       }
