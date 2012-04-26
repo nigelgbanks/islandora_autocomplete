@@ -58,43 +58,28 @@ function islandora_autocomplete_admin() {
  */
 function islandora_autocomplete_view_form(array &$form_state, $name) {
   module_load_include('inc', 'islandora_autocomplete', 'includes/autocomplete');
-  $url = islandora_autocomplete_db_get_url_by_name($name);
-  $field_index = isset($form_state['values']['field']) ? $form_state['values']['field'] : 1;
-  $field = ($url->fields == 1) ? NULL : array(
-    '#title' => t('Field'),
-    '#type' => 'select',
-    '#options' => islandora_autocomplete_view_form_field_options($url->fields),
-    '#default_value' => $field_index);
-  $query = isset($form_state['values']['query']) ? $form_state['values']['query'] : '';
-  $header = array();
-  for ($i = 0; $i < $url->fields; $i++) {
-    $args = array('!i' => $i + 1);
-    $header = array_merge($header, array(t('Field !i: Value', $args), t('Field !i: Label', $args)));
-  }
-  $results = islandora_autocomplete_query_source($url->id, $url->source, $query, $field_index - 1);
-  $rows = array();
-  if ($url->fields == 1) {
-    foreach ($results as $key => $value) {
-      $rows[] = array($key, $value);
-    }
-  }
-  else {
-    foreach ($results as $result) {
-      $row = array();
-      array_walk_recursive($result, create_function('&$v, $k, &$o', '$o[] = $v;'), &$row);
-      $rows[] = $row;
-    }
-  }
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No results.'), 'colspan' => (string) 2 * $url->fields, 'class' => 'message'));
-  }
+  $values = islandora_autocomplete_view_form_values($form_state, $name);
+  $header = islandora_autocomplete_view_form_table_header($values);
+  $rows = islandora_autocomplete_view_form_table_rows($values);
   return array(
+    'name' => array(
+      '#type' => 'hidden',
+      '#value' => $values['name']
+    ),
+    'count' => array(
+      '#type' => 'hidden',
+      '#value' => $values['count']
+    ),
     'query' => array(
       '#title' => t('Query'),
       '#type' => 'textfield',
-      '#default_value' => $query,
+      '#default_value' => $values['query'],
     ),
-    'field' => $field,
+    'field' => module_exists('islandora_autocomplete_multifield') ? array(
+      '#title' => t('Field'),
+      '#type' => 'select',
+      '#options' => islandora_autocomplete_view_form_field_options($values['count']),
+      '#default_value' => $values['field']) : NULL,
     'submit' => array(
       '#type' => 'submit',
       '#value' => 'Test'
@@ -111,6 +96,84 @@ function islandora_autocomplete_view_form(array &$form_state, $name) {
       )
     )
   );
+}
+
+/**
+ *
+ * @param array $form_state
+ *   The drupal form state.
+ * @param string $name 
+ *   The name of Autocomplete URL to view.
+ */
+function islandora_autocomplete_view_form_values(array &$form_state, $name) {
+  $url = islandora_autocomplete_db_get_url_by_name($name);
+  $values = isset($form_state['values']) ? $form_state['values'] : array();
+  $values['name'] = $name;
+  $values['count'] = $url->fields;
+  $values['query'] = isset($values['query']) ? $values['query'] : '';
+  $values['field'] = isset($values['field']) ? $values['field'] : 1;
+  return $values;
+}
+
+/**
+ * Gets the header for the view form table.
+ * 
+ * @param array $values
+ *   The values for the form fields.
+ * @return array
+ *   The header for the view form table.
+ */
+function islandora_autocomplete_view_form_table_header($values) {
+  $header = array();
+  for ($i = 0; $i < $values['count']; $i++) {
+    $args = array('!i' => $i + 1);
+    $header = array_merge($header, array(t('Field !i: Value', $args), t('Field !i: Label', $args)));
+  }
+  return $header;
+}
+
+/**
+ * Generate the rows for the view table form.
+ * 
+ * @param array $values
+ *   The values for the form fields.
+ * @return array
+ *   The rows for the view form table.
+ */
+function islandora_autocomplete_view_form_table_rows($values) {
+  $url = islandora_autocomplete_db_get_url_by_name($values['name']);
+  $results = islandora_autocomplete_query_source($url->id, $url->source, $values['query'], $values['field'] - 1); // Count the offset
+  $rows = array();
+  if ($url->fields == 1) {
+    foreach ($results as $key => $value) {
+      $rows[] = array($key, $value);
+    }
+  }
+  else {
+    foreach ($results as $result) {
+      $row = array();
+      array_walk_recursive($result, create_function('&$v, $k, &$o', '$o[] = $v;'), &$row);
+      $rows[] = $row;
+    }
+  }
+  if (empty($rows)) {
+    $rows[] = array(array('data' => t('No results.'), 'colspan' => (string) 2 * $url->fields, 'class' => 'message'));
+  }
+  return $rows;
+}
+
+/**
+ * Gets the source options for view form.
+ * 
+ * @return array
+ *   The source options for a select field.
+ */
+function islandora_autocomplete_view_form_field_options($count) {
+  $options = array();
+  for ($i = 1; $i < $count + 1; $i++) {
+    $options[$i] = $i;
+  }
+  return $options;
 }
 
 /**
@@ -135,21 +198,11 @@ function islandora_autocomplete_view_form_submit(array $form, array &$form_state
  */
 function islandora_autocomplete_form(array &$form_state, $name = '') {
   islandora_autocomplete_form_include_resources();
-  $default_source = islandora_autocomplete_get_default_source();
-  if (empty($default_source)) {
+  $values = islandora_autocomplete_form_values($form_state, $name);
+  if (empty($values['source'])) {
     drupal_set_message(t('No sources are defined, please install a module like "islandora autocomplete csv" so that a source can be defined.'), 'error');
     return array();
   }
-  $url = !empty($name) ? object_as_array(islandora_autocomplete_db_get_url_by_name($name)) : FALSE;
-  $values = isset($form_state['values']) ? $form_state['values'] : $url;
-  $values['source'] = isset($values['source']) ? $values['source'] : $default_source['type'];
-  $id = $url_id = isset($values['id']) ? $values['id'] : NULL;
-  $fields = !module_exists('islandora_autocomplete_multifield') ? NULL : array(
-    '#title' => t('Fields'),
-    '#type' => 'select',
-    '#description' => t('The number of fields this url will return, there should be the same number of fields in the form to recieve the values.'),
-    '#options' => array(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10),
-    '#default_value' => isset($values['fields']) ? $values['fields'] : 1);
   return array(
     '#action' => empty($name) ? MENU_ISLANDORA_AUTOCOMPLETE_ADD_URL : str_replace('%', $name, MENU_ISLANDORA_AUTOCOMPLETE_URL),
     '#attributes' => array(
@@ -157,28 +210,33 @@ function islandora_autocomplete_form(array &$form_state, $name = '') {
     ),
     'id' => array(
       '#type' => 'hidden',
-      '#value' => $id,
+      '#value' => $values['id'],
     ),
     'url_id' => array(// Copy of id, to simplify the source forms handling of this value.
       '#type' => 'hidden',
-      '#value' => $url_id,
+      '#value' => $values['url_id'],
     ),
     'name' => array(
       '#title' => t('Name'),
       '#description' => t('The machine-readable name of this autocomplete url. This text will be used for constructing the URL of #autocomplete_path. This name must contain only lowercase letters, numbers, and underscores. This name must be unique.'),
       '#type' => 'textfield',
       '#required' => TRUE,
-      '#default_value' => isset($values['name']) ? $values['name'] : '',
+      '#default_value' => $values['name'],
       '#element_validate' => array('islandora_autocomplete_form_validate_name'),
     ),
     'description' => array(
       '#title' => t('Description'),
       '#description' => t('A brief description of this content type.'),
       '#required' => TRUE,
-      '#default_value' => isset($values['description']) ? $values['description'] : '',
+      '#default_value' => $values['description'],
       '#type' => 'textarea',
     ),
-    'fields' => $fields,
+    'fields' => module_exists('islandora_autocomplete_multifield') ? array(
+      '#title' => t('Fields'),
+      '#type' => 'select',
+      '#description' => t('The number of fields this url will return, there should be the same number of fields in the form to recieve the values.'),
+      '#options' => array(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10),
+      '#default_value' => $values['fields']) : NULL,
     'source' => array(
       '#title' => t('Source'),
       '#name' => 'source',
@@ -193,7 +251,7 @@ function islandora_autocomplete_form(array &$form_state, $name = '') {
         'effect' => 'fade',
       ),
     ),
-    'source_form' => islandora_autocomplete_source_form($form_state, $url_id, $values['source']),
+    'source_form' => islandora_autocomplete_source_form($form_state, $values['url_id'], $values['source']),
     'submit' => array(
       '#type' => 'submit',
       '#value' => t('Submit')
@@ -202,6 +260,28 @@ function islandora_autocomplete_form(array &$form_state, $name = '') {
       '#value' => l(t('Cancel'), MENU_ISLANDORA_AUTOCOMPLETE_ADMIN)
     ),
   );
+}
+
+/**
+ * Attempts to populate the forms values with values stored in the database 
+ * if they have not already been altered in the form
+ * 
+ * @param array $form_state
+ *   The drupal form state.
+ * @param string $name 
+ *   The name of Autocomplete URL to update. If not preset this form will be used to create a new url.
+ */
+function islandora_autocomplete_form_values(array &$form_state, $name = '') {
+  $url = !empty($name) ? object_as_array(islandora_autocomplete_db_get_url_by_name($name)) : FALSE;
+  $default_source = islandora_autocomplete_get_default_source();
+  $values = isset($form_state['values']) ? $form_state['values'] : $url;
+  $values['id'] = isset($values['id']) ? $values['id'] : NULL;
+  $values['url_id'] = isset($values['url_id']) ? $values['url_id'] : NULL;
+  $values['name'] = isset($values['name']) ? $values['name'] : '';
+  $values['description'] = isset($values['description']) ? $values['description'] : '';
+  $values['fields'] = isset($values['fields']) ? $values['fields'] : 1;
+  $values['source'] = isset($values['source']) ? $values['source'] : $default_source['type'];
+  return $values;
 }
 
 /**
@@ -256,20 +336,6 @@ function islandora_autocomplete_source_form_options() {
       $label = $source['label'];
       $options[$type] = $label;
     }
-  }
-  return $options;
-}
-
-/**
- * Gets the source options.
- * 
- * @return array
- *   The source options for a select field.
- */
-function islandora_autocomplete_view_form_field_options($count) {
-  $options = array();
-  for ($i = 1; $i < $count + 1; $i++) {
-    $options[$i] = $i;
   }
   return $options;
 }
