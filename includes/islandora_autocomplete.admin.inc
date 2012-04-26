@@ -59,15 +59,34 @@ function islandora_autocomplete_admin() {
 function islandora_autocomplete_view_form(array &$form_state, $name) {
   module_load_include('inc', 'islandora_autocomplete', 'includes/autocomplete');
   $url = islandora_autocomplete_db_get_url_by_name($name);
+  $field_index = isset($form_state['values']['field']) ? $form_state['values']['field'] : 1;
+  $field = ($url->fields == 1) ? NULL : array(
+    '#title' => t('Field'),
+    '#type' => 'select',
+    '#options' => islandora_autocomplete_view_form_field_options($url->fields),
+    '#default_value' => $field_index);
   $query = isset($form_state['values']['query']) ? $form_state['values']['query'] : '';
-  $header = array(t('Value'), t('Label'));
-  $results = islandora_autocomplete_query_source($url->id, $url->source, $query);
+  $header = array();
+  for ($i = 0; $i < $url->fields; $i++) {
+    $args = array('!i' => $i + 1);
+    $header = array_merge($header, array(t('Field !i: Value', $args), t('Field !i: Label', $args)));
+  }
+  $results = islandora_autocomplete_query_source($url->id, $url->source, $query, $field_index - 1);
   $rows = array();
-  foreach ($results as $key => $value) {
-    $rows[] = array($key, $value);
+  if ($url->fields == 1) {
+    foreach ($results as $key => $value) {
+      $rows[] = array($key, $value);
+    }
+  }
+  else {
+    foreach ($results as $result) {
+      $row = array();
+      array_walk_recursive($result, create_function('&$v, $k, &$o', '$o[] = $v;'), &$row);
+      $rows[] = $row;
+    }
   }
   if (empty($rows)) {
-    $rows[] = array(array('data' => t('No results.'), 'colspan' => '2', 'class' => 'message'));
+    $rows[] = array(array('data' => t('No results.'), 'colspan' => (string) 2 * $url->fields, 'class' => 'message'));
   }
   return array(
     'query' => array(
@@ -75,6 +94,7 @@ function islandora_autocomplete_view_form(array &$form_state, $name) {
       '#type' => 'textfield',
       '#default_value' => $query,
     ),
+    'field' => $field,
     'submit' => array(
       '#type' => 'submit',
       '#value' => 'Test'
@@ -236,6 +256,20 @@ function islandora_autocomplete_source_form_options() {
       $label = $source['label'];
       $options[$type] = $label;
     }
+  }
+  return $options;
+}
+
+/**
+ * Gets the source options.
+ * 
+ * @return array
+ *   The source options for a select field.
+ */
+function islandora_autocomplete_view_form_field_options($count) {
+  $options = array();
+  for ($i = 1; $i < $count + 1; $i++) {
+    $options[$i] = $i;
   }
   return $options;
 }

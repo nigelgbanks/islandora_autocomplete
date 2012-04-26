@@ -59,7 +59,7 @@ function islandora_autocomplete_url_query_csv($url_id, $query = '', $index = NUL
   if ($source) {
     $handle = fopen($source->filename, 'r');
     if ($handle) {
-      if (empty($index)) {
+      if ($index === NULL) {
         while ($field = fgetcsv($handle)) {
           list($k, $v) = $field;
           if (empty($query) || (strpos($v, $query) === 0)) {
@@ -68,16 +68,10 @@ function islandora_autocomplete_url_query_csv($url_id, $query = '', $index = NUL
         }
       }
       else {
-        $index = ($index * 2); // two entries for every field.
         while ($field = fgetcsv($handle)) {
-          $k = $field[$index];
-          $v = $field[$index + 1];
+          $results = array_chunk($field, 2);
+          list($k, $v) = $results[$index];
           if (empty($query) || (strpos($v, $query) === 0)) {
-            $results = array();
-            $num = count($field);
-            for ($i = 0; $i < $num; $i += 2) {
-              $results[] = array($field[$i], $field[$i + 1]);
-            }
             $fields[] = $results;
           }
         }

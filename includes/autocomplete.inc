@@ -35,7 +35,7 @@ function islandora_autocomplete_query($name, $query = '', $index = 0) {
  * @return array
  *   The results of the query
  */
-function islandora_autocomplete_query_source($id, $source, $query, $index = NULL  ) {
+function islandora_autocomplete_query_source($id, $source, $query, $index = 1) {
   $query_hook = "islandora_autocomplete_url_query_{$source}";
   $results = function_exists($query_hook) ? call_user_func($query_hook, $id, $query, $index) : array();
   asort($results); // Sort alphabetically.
