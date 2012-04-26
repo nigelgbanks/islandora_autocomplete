@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * @file
+ *
+ * Contains the hooks this module responds to. As well as any
+ * functions that need to be present for every page request.
+ */
+
+/**
+ * Implements hook_elements().
+ */
+function islandora_autocomplete_multifield_elements() {
+  return array(
+    'autocomplete_group' => array(
+      '#input' => TRUE,
+      '#process' => array(
+        'form_expand_ahah',
+        'autocomplete_group_process'
+      )
+    )
+  );
+}
+
+/**
+ * Implements hook_process() for the autocomplete group element.
+ * 
+ * @param array $element
+ *   The element definition.
+ * @param boolean $edit
+ *   Not used.
+ * @param array $form_state
+ *   The drupal form state.
+ * @param array $complete_form 
+ *   The complete drupal form.
+ * 
+ * @return array
+ *   The processed element.
+ */
+function autocomplete_group_process(array $element, $edit, array &$form_state, array $complete_form) {
+  /**
+   * Go through each child and add to them
+   */
+  dsm($element);
+}

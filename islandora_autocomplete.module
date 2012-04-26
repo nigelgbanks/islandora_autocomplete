@@ -32,7 +32,7 @@ function islandora_autocomplete_menu() {
     ),
     MENU_ISLANDORA_AUTOCOMPLETE_AHAH_SOURCE => array(
       'file' => 'includes/islandora_autocomplete.admin.inc',
-      'page callback' => 'islandora_autocomplete_url_ahah_source',
+      'page callback' => 'islandora_autocomplete_form_ahah',
       'access callback' => 'user_access',
       'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
       'type' => MENU_CALLBACK,
@@ -56,7 +56,7 @@ function islandora_autocomplete_menu() {
       'description' => 'Add an Autocomplete URL.',
       'file' => 'includes/islandora_autocomplete.admin.inc',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('islandora_autocomplete_url_form'),
+      'page arguments' => array('islandora_autocomplete_form'),
       'access callback' => 'user_access',
       'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
       'type' => MENU_LOCAL_TASK,
@@ -66,7 +66,7 @@ function islandora_autocomplete_menu() {
       'description' => 'View the Autocomplete URL Content.',
       'file' => 'includes/islandora_autocomplete.admin.inc',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('islandora_autocomplete_url_view_form', 3),
+      'page arguments' => array('islandora_autocomplete_view_form', 3),
       'access callback' => 'user_access',
       'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
       'type' => MENU_CALLBACK,
@@ -76,7 +76,7 @@ function islandora_autocomplete_menu() {
       'description' => 'Edit a Autocomplete URL.',
       'file' => 'includes/islandora_autocomplete.admin.inc',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('islandora_autocomplete_url_form', 3),
+      'page arguments' => array('islandora_autocomplete_form', 3),
       'access callback' => 'user_access',
       'access arguments' => array(PERM_ISLANDORA_AUTOCOMPLETE_ADMIN),
       'type' => MENU_CALLBACK,
@@ -116,4 +116,57 @@ function islandora_autocomplete_help($path, $arg) {
     default:
       return '';
   }
+}
+
+/**
+ * Get the list of sources that can be used with to populate autocomplete urls.
+ *
+ * @return array
+ *   An numerically indexed array of sources.
+ */
+function islandora_autocomplete_get_sources() {
+  static $sources = NULL;
+  if (!isset($sources)) {
+    $sources = module_invoke_all('register_autocomplete_source');
+    $defaults = array(
+      'type' => '',
+      'label' => '',
+      'module' => '',
+      'form' => array(
+        'type' => 'inc',
+        'file' => ''
+      ),
+    );
+    foreach ($sources as &$source) {
+      $source = array_merge($defaults, $source);
+    }
+  }
+  return $sources;
+}
+
+/**
+ * Gets the requested source.
+ *
+ * @return array
+ *   The requested source if found, NULL otherwise.
+ */
+function islandora_autocomplete_get_source($type) {
+  $sources = islandora_autocomplete_get_sources();
+  foreach ($sources as $source) {
+    if ($source['type'] == $type) {
+      return $source;
+    }
+  }
+  return NULL;
+}
+
+/**
+ * Get the default source.
+ *
+ * @return array
+ *   The default source.
+ */
+function islandora_autocomplete_get_default_source() {
+  $sources = islandora_autocomplete_get_sources();
+  return isset($sources[0]) ? $sources[0] : NULL;
 }

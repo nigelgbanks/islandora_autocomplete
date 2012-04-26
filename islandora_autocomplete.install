@@ -60,6 +60,10 @@ function islandora_autocomplete_schema() {
           'length' => ISLANDORA_AUTOCOMPLETE_URL_MAX_SOURCE_NAME_LENGTH,
           'not null' => TRUE,
         ),
+        'fields' => array(
+          'type' => 'int',
+          'default' => 1,
+        ),
       ),
       'primary key' => array('id'),
       'indexes' => array(
@@ -68,4 +72,17 @@ function islandora_autocomplete_schema() {
       )
     )
   );
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function islandora_autocomplete_update_6000(&$sandbox) {
+  $ret = array();
+  $spec = array(
+    'type' => 'int',
+    'default' => 1,
+  );
+  db_add_field($ret, TABLE_ISLANDORA_AUTOCOMPLETE, 'fields', $spec);
+  return $ret;
 }

@@ -22,6 +22,18 @@ function islandora_autocomplete_db_get_urls() {
 }
 
 /**
+ * Performs a query and retrieves all the Autocomplete URL's stored in the database that are not used with the 
+ * multifield form.
+ *
+ * @return
+ *   A database query result resource, or FALSE if the query was not
+ *   executed correctly.
+ */
+function islandora_autocomplete_db_get_non_multifield_urls() {
+  return db_query('SELECT * FROM {%s} WHERE fields = 1', TABLE_ISLANDORA_AUTOCOMPLETE);
+}
+
+/**
  * Fetches the given Autocomplete URL from the database.
  *
  * @param int $id
@@ -60,16 +72,19 @@ function islandora_autocomplete_db_get_url_by_name($name) {
  *   A short description of the URL's purpose.
  * @param string $source
  *   The source used to populate the autocomplete URL.
- *
+ * @param string $fields
+ *   The number of fields within the source.
+ * 
  * @return boolean
  *   TRUE if successful FALSE otherwise.
  */
-function islandora_autocomplete_db_add_url($name, $description, $source) {
+function islandora_autocomplete_db_add_url($name, $description, $source, $fields) {
   if (db_result(db_query('SELECT count(id) FROM {%s} WHERE name = "%s"', TABLE_ISLANDORA_AUTOCOMPLETE, $name)) == 0) {
     $object = new stdClass();
     $object->name = $name;
     $object->description = $description;
     $object->source = $source;
+    $object->fields = $fields;
     return drupal_write_record(TABLE_ISLANDORA_AUTOCOMPLETE, $object) !== FALSE;
   }
   return FALSE;
@@ -86,17 +101,20 @@ function islandora_autocomplete_db_add_url($name, $description, $source) {
  *   A short description of the URL's purpose.
  * @param string $source
  *   The source used to populate the autocomplete URL.
+ * @param string $fields
+ *   The number of fields within the source.
  *
  * @return boolean
  *   TRUE if successful FALSE otherwise.
  */
-function islandora_autocomplete_db_update_url($id, $name, $description, $source) {
+function islandora_autocomplete_db_update_url($id, $name, $description, $source, $fields) {
   if (db_result(db_query('SELECT count(id) FROM {%s} WHERE id = %d', TABLE_ISLANDORA_AUTOCOMPLETE, $id)) == 1) {
     $object = new stdClass();
     $object->id = $id;
     $object->name = $name;
     $object->description = $description;
     $object->source = $source;
+    $object->fields = $fields;
     return drupal_write_record(TABLE_ISLANDORA_AUTOCOMPLETE, $object, 'id');
   }
   return FALSE;
@@ -136,44 +154,4 @@ function islandora_autocomplete_add_foreign_key_constraints_for($table) {
 EOT;
   $query = str_replace('%table%', TABLE_ISLANDORA_AUTOCOMPLETE, $constraint_query);
   db_query($query);
-}
-
-/**
- * Get the list of sources that can be used with to populate autocomplete urls.
- *
- * @return array
- *   An numerically idexed array of sources.
- */
-function islandora_autocomplete_get_sources() {
-  return variable_get('islandora_autocomplete_sources', array());
-}
-
-/**
- * Adds the given source to the list of available sources.
- *
- * @param string $source
- *   The source to add.
- */
-function islandora_autocomplete_add_source($source) {
-  $sources = variable_get('islandora_autocomplete_sources', array());
-  $valid = preg_match('/^[a-z0-9_]*$/', $source) == 1;
-  if ($valid && array_search($source, $sources) === FALSE) {
-    $sources[] = $source;
-    variable_set('islandora_autocomplete_sources', $sources);
-  }
-}
-
-/**
- * Removes the given source from the list of available sources.
- *
- * @param string $source
- *   The source to remove.
- */
-function islandora_autocomplete_remove_source($source) {
-  $sources = variable_get('islandora_autocomplete_sources', array());
-  $index = array_search($source, $sources);
-  if ($index !== FALSE) {
-    unset($sources[$index]);
-    variable_set('islandora_autocomplete_sources', $sources);
-  }
 }

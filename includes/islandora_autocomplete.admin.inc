@@ -15,8 +15,15 @@ module_load_include('inc', 'islandora_autocomplete', 'includes/islandora_autocom
  *   The admin page's HTML.
  */
 function islandora_autocomplete_admin() {
-  $urls = islandora_autocomplete_db_get_urls();
-  $header = array(t('Name'), t('URL'), t('Description'), t('Source'), array('data' => t('Operations'), 'colspan' => '3'));
+  $multifield_exists = module_exists('islandora_autocomplete_multifield');
+  if ($multifield_exists) {
+    $header = array(t('Name'), t('URL'), t('Description'), t('Source'), t('#Fields'), array('data' => t('Operations'), 'colspan' => '3'));
+    $urls = islandora_autocomplete_db_get_urls();
+  }
+  else {
+    $header = array(t('Name'), t('URL'), t('Description'), t('Source'), array('data' => t('Operations'), 'colspan' => '3'));
+    $urls = islandora_autocomplete_db_get_non_multifield_urls();
+  }
   $rows = array();
   while ($url = db_fetch_object($urls)) {
     $path = str_replace('%', $url->name, MENU_ISLANDORA_AUTOCOMPLETE_URL);
@@ -29,6 +36,9 @@ function islandora_autocomplete_admin() {
       filter_xss_admin($url->description),
       check_plain($url->source),
     );
+    if ($multifield_exists) {
+      $row[] = $url->fields;
+    }
     $row[] = array('data' => l(t('view'), $view_path));
     $row[] = array('data' => l(t('edit'), $edit_path));
     $row[] = array('data' => l(t('delete'), $delete_path));
@@ -46,7 +56,7 @@ function islandora_autocomplete_admin() {
  * @param string $name 
  *   The name of Autocomplete URL to display.
  */
-function islandora_autocomplete_url_view_form(array &$form_state, $name) {
+function islandora_autocomplete_view_form(array &$form_state, $name) {
   module_load_include('inc', 'islandora_autocomplete', 'includes/autocomplete');
   $url = islandora_autocomplete_db_get_url_by_name($name);
   $query = isset($form_state['values']['query']) ? $form_state['values']['query'] : '';
@@ -91,7 +101,7 @@ function islandora_autocomplete_url_view_form(array &$form_state, $name) {
  * @param array $form_state 
  *   The drupal form state. 
  */
-function islandora_autocomplete_url_view_form_submit(array $form, array &$form_state) {
+function islandora_autocomplete_view_form_submit(array $form, array &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
@@ -103,45 +113,43 @@ function islandora_autocomplete_url_view_form_submit(array $form, array &$form_s
  * @param string $name 
  *   The name of Autocomplete URL to update. If not preset this form will be used to create a new url.
  */
-function islandora_autocomplete_url_form(array &$form_state, $name = '') {
-  $path = drupal_get_path('module', 'islandora_autocomplete');
-  drupal_add_js("$path/js/fix-jquery-update.js", 'theme'); // Hacktacular, fixes issues between jquery update file uploads and AHAH.
-  $sources = islandora_autocomplete_get_sources();
-  $sources = array_combine($sources, $sources);
-  $default_source = array_keys($sources);
-  $default_source = $default_source[0];
-  if (empty($sources)) {
+function islandora_autocomplete_form(array &$form_state, $name = '') {
+  islandora_autocomplete_form_include_resources();
+  $default_source = islandora_autocomplete_get_default_source();
+  if (empty($default_source)) {
     drupal_set_message(t('No sources are defined, please install a module like "islandora autocomplete csv" so that a source can be defined.'), 'error');
     return array();
   }
   $url = !empty($name) ? object_as_array(islandora_autocomplete_db_get_url_by_name($name)) : FALSE;
   $values = isset($form_state['values']) ? $form_state['values'] : $url;
-  $values['source'] = isset($values['source']) ? $values['source'] : $default_source;
-  $hook = "islandora_autocomplete_url_{$values['source']}_form";
-  $source_form = function_exists($hook) ? call_user_func($hook, $form_state, $url ? $url['id'] : NULL) : array();
-  $source_form = array_merge(array(
-    '#title' => t('Source Settings'),
-    '#type' => 'item',
-    '#prefix' => '<div id="source-form-wrapper">',
-    '#suffix' => '</div>'), $source_form);
-  $id = array(
-    '#type' => 'hidden',
-    '#value' => isset($values['id']) ? $values['id'] : NULL,
-  );
+  $values['source'] = isset($values['source']) ? $values['source'] : $default_source['type'];
+  $id = $url_id = isset($values['id']) ? $values['id'] : NULL;
+  $fields = !module_exists('islandora_autocomplete_multifield') ? NULL : array(
+    '#title' => t('Fields'),
+    '#type' => 'select',
+    '#description' => t('The number of fields this url will return, there should be the same number of fields in the form to recieve the values.'),
+    '#options' => array(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10),
+    '#default_value' => isset($values['fields']) ? $values['fields'] : 1);
   return array(
     '#action' => empty($name) ? MENU_ISLANDORA_AUTOCOMPLETE_ADD_URL : str_replace('%', $name, MENU_ISLANDORA_AUTOCOMPLETE_URL),
     '#attributes' => array(
       'enctype' => "multipart/form-data"
     ),
-    'id' => $id,
-    'url_id' => $id, // Copy of id, to simplify the source forms handling of this value.
+    'id' => array(
+      '#type' => 'hidden',
+      '#value' => $id,
+    ),
+    'url_id' => array(// Copy of id, to simplify the source forms handling of this value.
+      '#type' => 'hidden',
+      '#value' => $url_id,
+    ),
     'name' => array(
       '#title' => t('Name'),
       '#description' => t('The machine-readable name of this autocomplete url. This text will be used for constructing the URL of #autocomplete_path. This name must contain only lowercase letters, numbers, and underscores. This name must be unique.'),
       '#type' => 'textfield',
       '#required' => TRUE,
       '#default_value' => isset($values['name']) ? $values['name'] : '',
-      '#element_validate' => array('islandora_autocomplete_url_validate_name'),
+      '#element_validate' => array('islandora_autocomplete_form_validate_name'),
     ),
     'description' => array(
       '#title' => t('Description'),
@@ -150,13 +158,14 @@ function islandora_autocomplete_url_form(array &$form_state, $name = '') {
       '#default_value' => isset($values['description']) ? $values['description'] : '',
       '#type' => 'textarea',
     ),
+    'fields' => $fields,
     'source' => array(
       '#title' => t('Source'),
       '#name' => 'source',
       '#description' => t('This is the source from which the autocomplete url will be populated.'),
       '#type' => 'select',
-      '#default_value' => isset($values['source']) ? $values['source'] : '',
-      '#options' => $sources,
+      '#default_value' => $values['source'],
+      '#options' => islandora_autocomplete_source_form_options(),
       '#ahah' => array(
         'path' => MENU_ISLANDORA_AUTOCOMPLETE_AHAH_SOURCE,
         'wrapper' => 'source-form-wrapper',
@@ -164,7 +173,7 @@ function islandora_autocomplete_url_form(array &$form_state, $name = '') {
         'effect' => 'fade',
       ),
     ),
-    'source_form' => $source_form,
+    'source_form' => islandora_autocomplete_source_form($form_state, $url_id, $values['source']),
     'submit' => array(
       '#type' => 'submit',
       '#value' => t('Submit')
@@ -173,6 +182,62 @@ function islandora_autocomplete_url_form(array &$form_state, $name = '') {
       '#value' => l(t('Cancel'), MENU_ISLANDORA_AUTOCOMPLETE_ADMIN)
     ),
   );
+}
+
+/**
+ * Includes the required js/css resources needed for this form.
+ */
+function islandora_autocomplete_form_include_resources() {
+  $path = drupal_get_path('module', 'islandora_autocomplete');
+  drupal_add_js("$path/js/fix-jquery-update.js", 'theme'); // Hacktacular, fixes issues between jquery update file uploads and AHAH.
+}
+
+/**
+ * Gets the form definition for the given source type as defined by hook_register_autocomplete_source().
+ * 
+ * @param array $form_state
+ *   The drupal form state.
+ * @param string $url_id
+ *   The id of the url whose source form will be returned. May be NULL when creating a new URL.
+ * @param string $type 
+ *   The 'type' value for the registered autocomplete source.
+ * 
+ * @return array
+ *   The source form definition.
+ */
+function islandora_autocomplete_source_form(array &$form_state, $url_id, $type) {
+  $wrapper = array(
+    '#title' => t('Source Settings'),
+    '#type' => 'item',
+    '#prefix' => '<div id="source-form-wrapper">',
+    '#suffix' => '</div>'
+  );
+  $form = array();
+  if (($source = islandora_autocomplete_get_source($type)) != FALSE) {
+    module_load_include($source['form']['type'], $source['module'], $source['form']['file']);
+    $hook = "{$source['module']}_form";
+    $form = function_exists($hook) ? call_user_func($hook, $form_state, $url_id) : array();
+  }
+  return array_merge($wrapper, $form);
+}
+
+/**
+ * Gets the source options.
+ * 
+ * @return array
+ *   The source options for a select field.
+ */
+function islandora_autocomplete_source_form_options() {
+  static $options = array();
+  if (empty($options)) {
+    $sources = islandora_autocomplete_get_sources();
+    foreach ($sources as $source) {
+      $type = $source['type'];
+      $label = $source['label'];
+      $options[$type] = $label;
+    }
+  }
+  return $options;
 }
 
 /**
@@ -185,7 +250,7 @@ function islandora_autocomplete_url_form(array &$form_state, $name = '') {
  * @param array $complete_form 
  *   The drupal form.
  */
-function islandora_autocomplete_url_validate_name($element, array &$form_state) {
+function islandora_autocomplete_form_validate_name($element, array &$form_state) {
   $values = $form_state['values'];
   $name = $values['name'];
   $original_url = isset($values['id']) ? islandora_autocomplete_db_get_url($values['id']) : FALSE;
@@ -206,10 +271,14 @@ function islandora_autocomplete_url_validate_name($element, array &$form_state) 
  * @param array $form_state 
  *   The drupal form state.
  */
-function islandora_autocomplete_url_form_validate(array $form, array &$form_state) {
-  $hook = "islandora_autocomplete_url_{$form_state['values']['source']}_form_validate";
-  if (function_exists($hook)) {
-    call_user_func_array($hook, array($form, &$form_state));
+function islandora_autocomplete_form_validate(array $form, array &$form_state) {
+  $type = $form_state['values']['source'];
+  if (($source = islandora_autocomplete_get_source($type)) != FALSE) {
+    module_load_include($source['form']['type'], $source['module'], $source['form']['file']);
+    $hook = "{$source['module']}_form_validate";
+    if (function_exists($hook)) {
+      call_user_func_array($hook, array($form, &$form_state));
+    }
   }
 }
 
@@ -221,20 +290,20 @@ function islandora_autocomplete_url_form_validate(array $form, array &$form_stat
  * @param array $form_state 
  *   The drupal form state.
  */
-function islandora_autocomplete_url_form_submit(array $form, array &$form_state) {
+function islandora_autocomplete_form_submit(array $form, array &$form_state) {
   extract($form_state['values'], EXTR_SKIP);
   if (isset($id)) {
-    islandora_autocomplete_url_form_submit_update_source($id, $source);
-    islandora_autocomplete_db_update_url($id, $name, $description, $source);
+    islandora_autocomplete_form_submit_update_source($id, $source);
+    islandora_autocomplete_db_update_url($id, $name, $description, $source, $fields);
   }
   else {
-    if (islandora_autocomplete_db_add_url($name, $description, $source) !== FALSE) {
+    if (islandora_autocomplete_db_add_url($name, $description, $source, $fields) !== FALSE) {
       $url = islandora_autocomplete_db_get_url_by_name($name);
       $values = &$form_state['values'];
       $values['id'] = $values['url_id'] = $url->id; // For use in the source submit handler.
     }
   }
-  islandora_autocomplete_url_source_form_submit($source, $form, $form_state);
+  islandora_autocomplete_source_form_submit($source, $form, $form_state);
   $form_state['redirect'] = MENU_ISLANDORA_AUTOCOMPLETE_ADMIN;
 }
 
@@ -247,7 +316,7 @@ function islandora_autocomplete_url_form_submit(array $form, array &$form_state)
  * @param string $source 
  *   The new source of the autocomplete url.
  */
-function islandora_autocomplete_url_form_submit_update_source($id, $source) {
+function islandora_autocomplete_form_submit_update_source($id, $source) {
   $original_url = islandora_autocomplete_db_get_url($id);
   if ($original_url->source != $source) { // Remove the old source
     module_invoke_all('delete_autocomplete_url', $id);
@@ -262,9 +331,14 @@ function islandora_autocomplete_url_form_submit_update_source($id, $source) {
  * @param array $form_state 
  *   The drupal form state.
  */
-function islandora_autocomplete_url_source_form_submit($source, array $form, array &$form_state) {
-  $hook = "islandora_autocomplete_url_{$source}_form_submit";
-  function_exists($hook) ? call_user_func($hook, $form, $form_state) : array();
+function islandora_autocomplete_source_form_submit($type, array $form, array &$form_state) {
+  if (($source = islandora_autocomplete_get_source($type)) != FALSE) {
+    module_load_include($source['form']['type'], $source['module'], $source['form']['file']);
+    $hook = "{$source['module']}_form_submit";
+    if (function_exists($hook)) {
+      call_user_func_array($hook, array($form, &$form_state));
+    }
+  }
 }
 
 /**
@@ -298,7 +372,7 @@ function islandora_autocomplete_delete_confirm_submit($form, &$form_state) {
 /**
  * Replace the source_form portion of the form when the source changes.
  */
-function islandora_autocomplete_url_ahah_source() {
+function islandora_autocomplete_form_ahah() {
   if (!isset($_REQUEST['form_build_id'])) { // Request is not valid
     header("HTTP/1.0 200 OK", FALSE, 200);
     exit();

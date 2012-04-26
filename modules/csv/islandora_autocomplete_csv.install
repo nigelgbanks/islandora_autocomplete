@@ -13,15 +13,14 @@ module_load_include('inc', 'islandora_autocomplete', 'includes/islandora_autocom
  */
 function islandora_autocomplete_csv_install() {
   drupal_install_schema('islandora_autocomplete_csv');
-  islandora_autocomplete_add_source('csv');
 }
 
 /**
  * Implementation of hook_uninstall().
  */
 function islandora_autocomplete_csv_uninstall() {
-  islandora_autocomplete_remove_source('csv');
   islandora_autocomplete_csv_delete_files();
+  islandora_autocomplete_csv_delete_urls();
   drupal_uninstall_schema(TABLE_ISLANDORA_AUTOCOMPLETE_CSV);
 }
 
@@ -32,6 +31,16 @@ function islandora_autocomplete_csv_delete_files() {
   $sources = islandora_autocomplete_csv_db_get_url_sources();
   while ($source = db_fetch_object($sources)) {
     file_delete($source->filename);
+  }
+}
+
+/**
+ * Deletes the urls that reference csv as a source. As well as the csv row via the delete hook.
+ */
+function islandora_autocomplete_csv_delete_urls() {
+  $sources = islandora_autocomplete_csv_db_get_url_sources();
+  while ($source = db_fetch_object($sources)) {
+    islandora_autocomplete_db_delete_url($source->url_id);
   }
 }
 
