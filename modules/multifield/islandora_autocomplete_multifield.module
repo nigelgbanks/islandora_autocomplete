@@ -23,7 +23,27 @@ function islandora_autocomplete_multifield_elements() {
 }
 
 /**
- * Implements hook_process() for the autocomplete group element.
+ * Implements hook_theme().
+ */
+function islandora_autocomplete_multifield_theme() {
+  return array(
+    'autocomplete_group' => array(),
+  );
+}
+
+/**
+ * Implements theme_element();
+ */
+function theme_autocomplete_group($element) {
+  _form_set_class($element, array(
+    'autocomplete_group'
+  ));
+  $attributes = drupal_attributes($element['#attributes']);
+  return theme('form_element', $element, "<span{$attributes}>{$element['#children']}</span>");
+}
+
+/**
+ * Implements hook_process() for the autocomplete_group element.
  * 
  * @param array $element
  *   The element definition.
@@ -39,7 +59,22 @@ function islandora_autocomplete_multifield_elements() {
  */
 function autocomplete_group_process(array $element, $edit, array &$form_state, array $complete_form) {
   /**
-   * Go through each child and add to them
+   * Go through each child and add to them auto complete stuff...
    */
-  dsm($element);
+  autocomplete_group_set_child_autocomplete_path($element, $element['#autocomplete_path']);
+  return $element;
+}
+
+function autocomplete_group_set_child_autocomplete_path(array &$element, $base) {
+  static $index = 0;
+  $autocomplete_types = array('textfield');
+  $children = element_children($element);
+  foreach ($children as $key) {
+    $child = &$element[$key];
+    if (array_search($child['#type'], $autocomplete_types) !== FALSE) {
+      $child['#autocomplete_path'] = "$base/$index";
+      $index++;
+    }
+    autocomplete_group_set_child_autocomplete_path($child, $base); // Recurse
+  }
 }
