@@ -5,13 +5,14 @@
 Drupal.behaviors.autocomplete_multifield = function (context) {
   var ACMultiDB = [];
   $('input.autocomplete_multifield:not(.autocomplete-processed)', context).each(function () {
+    var id = this.id.substr(0, this.id.length - 13);
+    var settings = Drupal.settings.autocomplete_group[id];
     var uri = this.value;
-    if (!ACMultiDB[uri]) {
+    if (!ACMultiDB[uri + '/' + settings.index]) { // Index's share the same base url.
       ACMultiDB[uri] = new Drupal.ACMultiDB(uri);
     }
-    var input = $('#' + this.id.substr(0, this.id.length - 13))
-    .attr('autocomplete', 'OFF')[0];
-    $(input.form).submit(Drupal.autocompleteSubmit);
+    var input = $('#' + id).attr('autocomplete', 'OFF')[0];
+    $(input.form).submit(Drupal.autocomplete_multifieldSubmit);
     new Drupal.jsACMulti(input, ACMultiDB[uri]);
     $(this).addClass('autocomplete-processed');
   });
@@ -219,8 +220,9 @@ Drupal.jsACMulti.prototype.found = function (matches) {
   var settings = Drupal.settings.autocomplete_group[this.input.id];
   for (key in matches) {
     var li = document.createElement('li');
+    var display = Drupal.jsACMulti.prototype.formatMatch(settings, matches[key]);
     $(li)
-    .html('<div>'+ matches[key][settings.index][1] +'</div>')
+    .html('<div>'+ display +'</div>')
     .mousedown(function () {
       ac.select(this);
     })
@@ -248,6 +250,25 @@ Drupal.jsACMulti.prototype.found = function (matches) {
     }
   }
 };
+
+Drupal.jsACMulti.prototype.formatMatch = function(settings, match) {
+  if(settings.format == null) {
+    return match[settings.index][1];
+  }
+  else {
+    var output = settings.format;
+    output = output.replace(/\\v0/, match[settings.index][0]);
+    output = output.replace(/\\l0/, match[settings.index][1]);
+    match.forEach(function(item, index) {
+      var regex = new RegExp("\\\\v" + (index + 1));
+      output = output.replace(regex, item[0]);
+      regex = new RegExp("\\\\l" + (index + 1));
+      output = output.replace(regex, item[1]);
+    });
+    return output;
+  }
+  return 'A problem occured...';
+}
 
 Drupal.jsACMulti.prototype.setStatus = function (status) {
   switch (status) {
