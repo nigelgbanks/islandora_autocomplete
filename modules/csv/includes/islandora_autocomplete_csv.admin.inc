@@ -8,12 +8,12 @@
 
 /**
  * Returns the form definition for the csv source part of the autocomplete url form.
- * 
+ *
  * @param array $form_state
  *   The drupal form state.
- * @param int $url_id 
+ * @param int $url_id
  *   The id of the URL being edited, It is null when creating a new url.
- * 
+ *
  * @return array
  *   The csv source part of the autocomplete url form.
  */
@@ -34,7 +34,7 @@ function islandora_autocomplete_csv_form(array &$form_state, $url_id = NULL) {
  *
  * @param array $form
  *   The drupal form.
- * @param array $form_state 
+ * @param array $form_state
  *   The drupal form state.
  */
 function islandora_autocomplete_csv_form_validate(array $form, array &$form_state) {
@@ -51,7 +51,7 @@ function islandora_autocomplete_csv_form_validate(array $form, array &$form_stat
 
 /**
  * Prevent the upload of non csv files.
- * 
+ *
  * @global object $user
  * @param object $file
  *   The file object to validate.
@@ -75,7 +75,7 @@ function islandora_autocomplete_csv_validate_file_upload($file, $extensions) {
  *
  * @param array $form
  *   The drupal form.
- * @param array $form_state 
+ * @param array $form_state
  *   The drupal form state.
  */
 function islandora_autocomplete_csv_form_submit(array $form, array &$form_state) {

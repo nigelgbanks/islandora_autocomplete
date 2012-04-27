@@ -22,7 +22,7 @@ function islandora_autocomplete_db_get_urls() {
 }
 
 /**
- * Performs a query and retrieves all the Autocomplete URL's stored in the database that are not used with the 
+ * Performs a query and retrieves all the Autocomplete URL's stored in the database that are not used with the
  * multifield form.
  *
  * @return
@@ -74,7 +74,7 @@ function islandora_autocomplete_db_get_url_by_name($name) {
  *   The source used to populate the autocomplete URL.
  * @param string $fields
  *   The number of fields within the source.
- * 
+ *
  * @return boolean
  *   TRUE if successful FALSE otherwise.
  */

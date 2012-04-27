@@ -25,14 +25,14 @@ function islandora_autocomplete_query($name, $query = '', $index = 0) {
 
 /**
  * Query the source.
- * 
+ *
  * @param int $id
  *   The unique id for the requested Autocomplete URL.
  * @param string $source
  *   The source used to populate the autocomplete URL.
  * @param string $query
  *   The search query for the autocomplete.
- * 
+ *
  * @return array
  *   The results of the query
  */

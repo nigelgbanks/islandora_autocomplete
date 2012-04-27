@@ -38,16 +38,16 @@ function islandora_autocomplete_multifield_theme() {
 
 /**
  * Implements hook_process() for the autocomplete_group element.
- * 
+ *
  * @param array $element
  *   The element definition.
  * @param boolean $edit
  *   Not used.
  * @param array $form_state
  *   The drupal form state.
- * @param array $complete_form 
+ * @param array $complete_form
  *   The complete drupal form.
- * 
+ *
  * @return array
  *   The processed element.
  */

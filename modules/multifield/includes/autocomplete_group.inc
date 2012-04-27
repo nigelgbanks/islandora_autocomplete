@@ -20,7 +20,7 @@ function theme_autocomplete_group($element) {
 
 /**
  * Returns all the form element types that can be used as autocomplete_multifields.
- * 
+ *
  * @return array
  *   All the form element types that can be used as autocomplete_multifields.
  */
@@ -30,11 +30,11 @@ function autocomplete_group_get_autocomplete_types() {
 
 /**
  * Checks to see if the given type is a autocomplete_multifield type.
- * 
+ *
  * @param string $type
  *   A form element type such as 'textfield'.
  * @return boolean
- *   Checks to see if the form element type is a 
+ *   Checks to see if the form element type is a
  */
 function autocomplete_group_is_autocomplete_multifield_type($type) {
   $types = autocomplete_group_get_autocomplete_types();
@@ -43,7 +43,7 @@ function autocomplete_group_is_autocomplete_multifield_type($type) {
 
 /**
  * Sets all the required properties autocomplete_group child autocomplete_multifield elements.
- * 
+ *
  * @param array $element
  *   The element whose children's properties are to be set.
  * @param string $path
@@ -54,8 +54,8 @@ function autocomplete_group_is_autocomplete_multifield_type($type) {
  *   The default #user_data['format'] property.
  * @param int $index
  *   The index of the current autocomplete_multifield property relvant to its sibiling autocomplete_multifield properties.
- * 
- * @return array 
+ *
+ * @return array
  *   The element whose children's properties are to be set.
  */
 function autocomplete_group_set_child_multifield_properties(array &$element, $path, $group, $format, $index = 0) {
@@ -65,7 +65,7 @@ function autocomplete_group_set_child_multifield_properties(array &$element, $pa
     if (autocomplete_group_is_autocomplete_multifield_type($child['#type'])) {
       $child = autocomplete_group_set_multifield_properties($child, $path, $group, $format, $index);
       $index++;
-    } 
+    }
     autocomplete_group_set_child_multifield_properties($child, $path, $group, $format, $index); // Recurse
   }
   return $element;
@@ -73,7 +73,7 @@ function autocomplete_group_set_child_multifield_properties(array &$element, $pa
 
 /**
  * Set's the multifield properties for the given element.
- * 
+ *
  * @param array $element
  *   The form element to set the multifield properties.
  * @param string $path
@@ -85,7 +85,7 @@ function autocomplete_group_set_child_multifield_properties(array &$element, $pa
  * @param int $index
  *   The index of the current autocomplete_multifield property relvant to its sibiling autocomplete_multifield properties.
  *   This may be overwritten by a user defined index.
- * 
+ *
  * @return array
  *   The form element whose multifield properties have been set.
  */
@@ -107,7 +107,7 @@ function autocomplete_group_set_multifield_properties(array $element, $path, $gr
  * Includes the formating and request data that is used by the behaviors attached to autocomplete_multifield's
  * to request/format/populate.
  *
- * @param array $element 
+ * @param array $element
  *   The autocomplete_multifield's form properties.
  */
 function autocomplete_group_add_settings(array $element) {
@@ -127,12 +127,12 @@ function autocomplete_group_add_settings(array $element) {
 /**
  * Changes the class on the input field from autocomplete to autocomplete_multifield so that the right
  * Drupal behaviors get attached to autocomplete_multifields.
- * 
+ *
  * @param string $output
  *   The rendered html for the element to change.
- * @param array $element 
+ * @param array $element
  *   The form data for the rendered element.
- * 
+ *
  * @return
  *   The altered html.
  */
