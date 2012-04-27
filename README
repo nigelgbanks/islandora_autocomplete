@@ -1,49 +1,33 @@
 Islandora Auto-complete allows users to define auto-complete URL's to be used in a 
 Drupal forms in conjuction with the #autocomplete property of form elements.
 
-Known Issues: When uninstalling this module uninstall all dependant modules first otherwise the 
-foreign key constraint will cause it to fail. 
 
-@todo store all tables that use foreign key references in the variable 
-table, remove the constraints when uninstalling.
 
-Limitations: Can't change the source of a url once it has been created. It must be deleted and recreated with a 
-different source.
+HOOK_delete_autocomplete_url($id)
 
-Available Hooks:
+Notifies modules that an autcomplete url is being deleted so they may perform any clean up needed.
 
-Hook: 
-  Function:
-    hook_autocomplete_url_source
-  Parameters: 
-    none
-  Returns: 
-    An array with the given format:
-     array(
-      'name' => A human readable name for the source.
-      'type' => A machine readable name for the source.
-     );
-  Description:
-    This hook is meant to fetch any potentially matching values from the defined source.
+HOOK_register_autocomplete_source()
 
-Hook: 
-  Function:
-    islandora_autocomplete_url_query_{source}
-  Parameters: 
-    int $url_id - The Autocomplete URL ID to query.
-    string $value - The value to query the source with.
-  Returns: 
-    An array formatted as in the manner described by the #autocomplete form field property.
-  Description:
-    This hook is meant to fetch any potentially matching values from the defined source.
-    
-Hook:
-    hook_delete_autocomplete_url
-  Parameters: 
-    int $url_id - The Autocomplete URL ID that will be deleted.
-  Returns: 
-    none
-  Description:
-    This hook is used to notify any modules that implement a source that the url they are referencing is to be deleted. 
-    This allows them clean up any fields or resources they allocated to that url.
-  
+Registers an autocomplete source. Used to load a source settings form from the module.
+
+Returns an array like so,
+  array(
+    'type' => 'machine readable name of source',
+    'label' => 'human readable name of source',
+    'module' => 'module anem',
+    'form' => array( // Describes where the source form is defined.
+      'type' => 'file type',
+      'file' => 'file'
+    ),
+  )
+
+HOOK_form
+HOOK_form_validate
+HOOK_form_submit
+
+Defines/Validates/Submits the source section of the form, just like any Drupal form.
+
+islandora_autocomplete_url_query_HOOK($id, $query, $index)
+
+In this case the HOOK is equal to the type as returned by the modules implementation of register_autocomplete_source()
