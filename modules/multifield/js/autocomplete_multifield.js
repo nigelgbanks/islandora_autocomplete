@@ -2,17 +2,17 @@
 /**
  * Attaches the autocomplete behavior to all required fields
  */
-Drupal.behaviors.autocomplete = function (context) {
-  var acdb = [];
-  $('input.autocomplete:not(.autocomplete-processed)', context).each(function () {
+Drupal.behaviors.autocomplete_multifield = function (context) {
+  var ACMultiDB = [];
+  $('input.autocomplete_multifield:not(.autocomplete-processed)', context).each(function () {
     var uri = this.value;
-    if (!acdb[uri]) {
-      acdb[uri] = new Drupal.ACDB(uri);
+    if (!ACMultiDB[uri]) {
+      ACMultiDB[uri] = new Drupal.ACMultiDB(uri);
     }
     var input = $('#' + this.id.substr(0, this.id.length - 13))
-      .attr('autocomplete', 'OFF')[0];
+    .attr('autocomplete', 'OFF')[0];
     $(input.form).submit(Drupal.autocompleteSubmit);
-    new Drupal.jsAC(input, acdb[uri]);
+    new Drupal.jsACMulti(input, ACMultiDB[uri]);
     $(this).addClass('autocomplete-processed');
   });
 };
@@ -21,7 +21,7 @@ Drupal.behaviors.autocomplete = function (context) {
  * Prevents the form from submitting if the suggestions popup is open
  * and closes the suggestions popup when doing so.
  */
-Drupal.autocompleteSubmit = function () {
+Drupal.autocomplete_multifieldSubmit = function () {
   return $('#autocomplete').each(function () {
     this.owner.hidePopup();
   }).size() == 0;
@@ -30,22 +30,29 @@ Drupal.autocompleteSubmit = function () {
 /**
  * An AutoComplete object
  */
-Drupal.jsAC = function (input, db) {
+Drupal.jsACMulti = function (input, db) {
   var ac = this;
   this.input = input;
   this.db = db;
 
   $(this.input)
-    .keydown(function (event) { return ac.onkeydown(this, event); })
-    .keyup(function (event) { ac.onkeyup(this, event); })
-    .blur(function () { ac.hidePopup(); ac.db.cancel(); });
+  .keydown(function (event) {
+    return ac.onkeydown(this, event);
+  })
+  .keyup(function (event) {
+    ac.onkeyup(this, event);
+  })
+  .blur(function () {
+    ac.hidePopup();
+    ac.db.cancel();
+  });
 
 };
 
 /**
  * Handler for the "keydown" event
  */
-Drupal.jsAC.prototype.onkeydown = function (input, e) {
+Drupal.jsACMulti.prototype.onkeydown = function (input, e) {
   if (!e) {
     e = window.event;
   }
@@ -64,7 +71,7 @@ Drupal.jsAC.prototype.onkeydown = function (input, e) {
 /**
  * Handler for the "keyup" event
  */
-Drupal.jsAC.prototype.onkeyup = function (input, e) {
+Drupal.jsACMulti.prototype.onkeyup = function (input, e) {
   if (!e) {
     e = window.event;
   }
@@ -101,14 +108,17 @@ Drupal.jsAC.prototype.onkeyup = function (input, e) {
 /**
  * Puts the currently highlighted suggestion into the autocomplete field
  */
-Drupal.jsAC.prototype.select = function (node) {
-  this.input.value = node.autocompleteValue;
+Drupal.jsACMulti.prototype.select = function (node) {
+  var inputs = $('#' + node.autocompleteGroup + ' input.form-autocomplete');
+  inputs.each(function(index, input) {
+    input.value = node.autocompleteValue[index][0];
+  });
 };
 
 /**
  * Highlights the next suggestion
  */
-Drupal.jsAC.prototype.selectDown = function () {
+Drupal.jsACMulti.prototype.selectDown = function () {
   if (this.selected && this.selected.nextSibling) {
     this.highlight(this.selected.nextSibling);
   }
@@ -123,7 +133,7 @@ Drupal.jsAC.prototype.selectDown = function () {
 /**
  * Highlights the previous suggestion
  */
-Drupal.jsAC.prototype.selectUp = function () {
+Drupal.jsACMulti.prototype.selectUp = function () {
   if (this.selected && this.selected.previousSibling) {
     this.highlight(this.selected.previousSibling);
   }
@@ -132,7 +142,7 @@ Drupal.jsAC.prototype.selectUp = function () {
 /**
  * Highlights a suggestion
  */
-Drupal.jsAC.prototype.highlight = function (node) {
+Drupal.jsACMulti.prototype.highlight = function (node) {
   if (this.selected) {
     $(this.selected).removeClass('selected');
   }
@@ -143,7 +153,7 @@ Drupal.jsAC.prototype.highlight = function (node) {
 /**
  * Unhighlights a suggestion
  */
-Drupal.jsAC.prototype.unhighlight = function (node) {
+Drupal.jsACMulti.prototype.unhighlight = function (node) {
   $(node).removeClass('selected');
   this.selected = false;
 };
@@ -151,16 +161,22 @@ Drupal.jsAC.prototype.unhighlight = function (node) {
 /**
  * Hides the autocomplete suggestions
  */
-Drupal.jsAC.prototype.hidePopup = function (keycode) {
+Drupal.jsACMulti.prototype.hidePopup = function (keycode) {
   // Select item if the right key or mousebutton was pressed
   if (this.selected && ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode)) {
-    this.input.value = this.selected.autocompleteValue;
+    var selected = this.selected;
+    var inputs = $('#' + selected.autocompleteGroup + ' input.form-autocomplete');
+    inputs.each(function(index, input) {
+      input.value = selected.autocompleteValue[index][0];
+    });
   }
   // Hide popup
   var popup = this.popup;
   if (popup) {
     this.popup = null;
-    $(popup).fadeOut('fast', function() { $(popup).remove(); });
+    $(popup).fadeOut('fast', function() {
+      $(popup).remove();
+    });
   }
   this.selected = false;
 };
@@ -168,7 +184,7 @@ Drupal.jsAC.prototype.hidePopup = function (keycode) {
 /**
  * Positions the suggestions popup and starts a search
  */
-Drupal.jsAC.prototype.populatePopup = function () {
+Drupal.jsACMulti.prototype.populatePopup = function () {
   // Show popup
   if (this.popup) {
     $(this.popup).remove();
@@ -186,29 +202,36 @@ Drupal.jsAC.prototype.populatePopup = function () {
 
   // Do search
   this.db.owner = this;
-  this.db.search(this.input.value);
+  this.db.search(this.input);
 };
 
 /**
  * Fills the suggestion popup with any matches received
  */
-Drupal.jsAC.prototype.found = function (matches) {
+Drupal.jsACMulti.prototype.found = function (matches) {
   // If no value in the textfield, do not show the popup.
   if (!this.input.value.length) {
     return false;
   }
-
   // Prepare matches
   var ul = document.createElement('ul');
   var ac = this;
+  var settings = Drupal.settings.autocomplete_group[this.input.id];
   for (key in matches) {
     var li = document.createElement('li');
     $(li)
-      .html('<div>'+ matches[key] +'</div>')
-      .mousedown(function () { ac.select(this); })
-      .mouseover(function () { ac.highlight(this); })
-      .mouseout(function () { ac.unhighlight(this); });
-    li.autocompleteValue = key;
+    .html('<div>'+ matches[key][settings.index][1] +'</div>')
+    .mousedown(function () {
+      ac.select(this);
+    })
+    .mouseover(function () {
+      ac.highlight(this);
+    })
+    .mouseout(function () {
+      ac.unhighlight(this);
+    });
+    li.autocompleteGroup = settings.group;
+    li.autocompleteValue = matches[key];
     $(ul).append(li);
   }
 
@@ -218,13 +241,15 @@ Drupal.jsAC.prototype.found = function (matches) {
       $(this.popup).empty().append(ul).show();
     }
     else {
-      $(this.popup).css({visibility: 'hidden'});
+      $(this.popup).css({
+        visibility: 'hidden'
+      });
       this.hidePopup();
     }
   }
 };
 
-Drupal.jsAC.prototype.setStatus = function (status) {
+Drupal.jsACMulti.prototype.setStatus = function (status) {
   switch (status) {
     case 'begin':
       $(this.input).addClass('throbbing');
@@ -240,7 +265,7 @@ Drupal.jsAC.prototype.setStatus = function (status) {
 /**
  * An AutoComplete DataBase object
  */
-Drupal.ACDB = function (uri) {
+Drupal.ACMultiDB = function (uri) {
   this.uri = uri;
   this.delay = 300;
   this.cache = {};
@@ -249,8 +274,9 @@ Drupal.ACDB = function (uri) {
 /**
  * Performs a cached and delayed search
  */
-Drupal.ACDB.prototype.search = function (searchString) {
+Drupal.ACMultiDB.prototype.search = function (input) {
   var db = this;
+  var searchString = input.value;
   this.searchString = searchString;
 
   // See if this key has been searched for before
@@ -268,7 +294,7 @@ Drupal.ACDB.prototype.search = function (searchString) {
     // Ajax GET request for autocompletion
     $.ajax({
       type: "GET",
-      url: db.uri +'/'+ Drupal.encodeURIComponent(searchString),
+      url: db.uri +'/'+ Drupal.encodeURIComponent(searchString) + '/' + Drupal.settings.autocomplete_group[input.id].index,
       dataType: 'json',
       success: function (matches) {
         if (typeof matches['status'] == 'undefined' || matches['status'] != 0) {
@@ -290,7 +316,7 @@ Drupal.ACDB.prototype.search = function (searchString) {
 /**
  * Cancels the current autocomplete request
  */
-Drupal.ACDB.prototype.cancel = function() {
+Drupal.ACMultiDB.prototype.cancel = function() {
   if (this.owner) this.owner.setStatus('cancel');
   if (this.timer) clearTimeout(this.timer);
   this.searchString = '';

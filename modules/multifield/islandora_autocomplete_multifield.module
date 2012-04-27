@@ -38,8 +38,21 @@ function theme_autocomplete_group($element) {
   _form_set_class($element, array(
     'autocomplete_group'
   ));
+  $id = $element['#id'];
   $attributes = drupal_attributes($element['#attributes']);
-  return theme('form_element', $element, "<span{$attributes}>{$element['#children']}</span>");
+  return theme('form_element', $element, "<div id='$id'{$attributes}>{$element['#children']}</div>");
+}
+
+/**
+ * 
+ */
+function autocomplete_group_get_autocomplete_types() {
+  return array('textfield');
+}
+
+function autocomplete_group_is_autocomplete_type($type) {
+  $types = autocomplete_group_get_autocomplete_types();
+  return array_search($type, $types) !== FALSE;
 }
 
 /**
@@ -58,23 +71,59 @@ function theme_autocomplete_group($element) {
  *   The processed element.
  */
 function autocomplete_group_process(array $element, $edit, array &$form_state, array $complete_form) {
-  /**
-   * Go through each child and add to them auto complete stuff...
-   */
-  autocomplete_group_set_child_autocomplete_path($element, $element['#autocomplete_path']);
+  $element['#user_data']['format'] = isset($element['#user_data']['format']) ? $element['#user_data']['format'] : NULL;
+  autocomplete_group_set_child_autocomplete_path($element, $element);
   return $element;
 }
 
-function autocomplete_group_set_child_autocomplete_path(array &$element, $base) {
-  static $index = 0;
-  $autocomplete_types = array('textfield');
+function autocomplete_group_set_child_autocomplete_path(array $autocomplete_group, array &$element, $index = 0) {
   $children = element_children($element);
   foreach ($children as $key) {
     $child = &$element[$key];
-    if (array_search($child['#type'], $autocomplete_types) !== FALSE) {
-      $child['#autocomplete_path'] = "$base/$index";
+    if (autocomplete_group_is_autocomplete_type($child['#type'])) {
+      $child['#autocomplete_path'] = "{$autocomplete_group['#autocomplete_path']}";
+      $child['#index'] = $index;
+      $child['#user_data']['group'] = $autocomplete_group['#id'];
+      $child['#user_data']['format'] = isset($child['#user_data']['format']) ? $child['#user_data']['format'] : $autocomplete_group['#user_data']['format'];
+      $child['#pre_render'] = isset($child['#pre_render']) ? $child['#pre_render'] : array();
+      array_unshift($child['#pre_render'], 'autocomplete_group_add_settings');
+      $child['#post_render'] = isset($child['#post_render']) ? $child['#post_render'] : array();
+      array_unshift($child['#post_render'], 'autocomplete_group_child_correct_class');
       $index++;
     }
-    autocomplete_group_set_child_autocomplete_path($child, $base); // Recurse
+    if ($child['#type'] != 'autocomplete_group') { // Don't mess with nested autocomplete_groups
+      autocomplete_group_set_child_autocomplete_path($autocomplete_group, $child, $index); // Recurse
+    }
   }
+  return $index;
+}
+
+/**
+ *
+ * @param string $output
+ *   
+ * @param array $element 
+ */
+function autocomplete_group_add_settings(array $element) {
+  $settings = array(
+    $element['#id'] => array(
+      'group' => $element['#user_data']['group'],
+      'index' => $element['#index'],
+      'format' => $element['#user_data']['format']
+    )
+  );
+  drupal_add_js(array('autocomplete_group' => $settings), 'setting');
+  $path = drupal_get_path('module', 'islandora_autocomplete_multifield');
+  drupal_add_js("$path/js/autocomplete_multifield.js", 'module');
+  return $element;
+}
+
+/**
+ *
+ * @param string $output
+ *   
+ * @param array $element 
+ */
+function autocomplete_group_child_correct_class($output, array $element) {
+  return preg_replace('/class\=\"autocomplete\"/', 'class="autocomplete_multifield"', $output);
 }
