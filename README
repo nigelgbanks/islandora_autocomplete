@@ -1,8 +1,6 @@
 Islandora Auto-complete allows users to define auto-complete URL's to be used in a 
 Drupal forms in conjuction with the #autocomplete property of form elements.
 
-
-
 HOOK_delete_autocomplete_url($id)
 
 Notifies modules that an autcomplete url is being deleted so they may perform any clean up needed.
