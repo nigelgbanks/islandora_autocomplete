@@ -6,7 +6,7 @@
  * Contains the hooks this module responds to. As well as any
  * functions that need to be present for every page request.
  */
-ini_set("auto_detect_line_endings", true);
+ini_set("auto_detect_line_endings", FALSE);
 
 /**
  * Implements hook_register_autocomplete_source().
@@ -63,6 +63,8 @@ function islandora_autocomplete_url_query_csv($url_id, $query = '', $index = NUL
       if ($index === NULL) {
         while ($field = fgetcsv($handle)) {
           list($k, $v) = $field;
+          $k = trim($k);
+          $v = trim($v);
           if (empty($query) || (strpos($v, $query) === 0)) {
             $fields[$k] = $v;
           }
@@ -72,6 +74,8 @@ function islandora_autocomplete_url_query_csv($url_id, $query = '', $index = NUL
         while ($field = fgetcsv($handle)) {
           $results = array_chunk($field, 2);
           list($k, $v) = $results[$index];
+          $k = trim($k);
+          $v = trim($v);
           if (empty($query) || (strpos($v, $query) === 0)) {
             $fields[] = $results;
           }
