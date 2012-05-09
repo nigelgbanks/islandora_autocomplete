@@ -6,6 +6,7 @@
  * Contains the hooks this module responds to. As well as any
  * functions that need to be present for every page request.
  */
+ini_set("auto_detect_line_endings", true);
 
 /**
  * Implements hook_register_autocomplete_source().
