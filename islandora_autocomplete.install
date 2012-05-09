@@ -7,7 +7,7 @@
  */
 module_load_include('inc', 'islandora_autocomplete', 'includes/islandora_autocomplete.db');
 // .module file doesn't always run before .install file run
-if (!defined(FILES_ISLANDORA_AUTOCOMPLETE)) {
+if (!defined('FILES_ISLANDORA_AUTOCOMPLETE')) {
   define('FILES_ISLANDORA_AUTOCOMPLETE', file_directory_path() . '/autocomplete');
 }
 

@@ -75,7 +75,7 @@ function islandora_autocomplete_view_form(array &$form_state, $name) {
       '#type' => 'textfield',
       '#default_value' => $values['query'],
     ),
-    'field' => module_exists('islandora_autocomplete_multifield') ? array(
+    'field' => (module_exists('islandora_autocomplete_multifield') && $values['count'] > 1) ? array(
       '#title' => t('Field'),
       '#type' => 'select',
       '#options' => islandora_autocomplete_view_form_field_options($values['count']),
@@ -86,14 +86,14 @@ function islandora_autocomplete_view_form(array &$form_state, $name) {
     ),
     'cancel' => array(
       '#type' => 'markup',
-      '#value' => check_plain(l(t('Cancel'), MENU_ISLANDORA_AUTOCOMPLETE_ADMIN))
+      '#value' => l(t('Cancel'), MENU_ISLANDORA_AUTOCOMPLETE_ADMIN)
     ),
     'results' => array(
       '#title' => t('Query Results'),
       '#type' => 'fieldset',
       'table' => array(
         '#type' => 'markup',
-        '#value' => check_plain(theme('table', $header, $rows))
+        '#value' => theme('table', $header, $rows)
       )
     )
   );
@@ -112,7 +112,9 @@ function islandora_autocomplete_view_form_values(array &$form_state, $name) {
   $values['name'] = $name;
   $values['count'] = $url->fields;
   $values['query'] = isset($values['query']) ? $values['query'] : '';
-  $values['field'] = isset($values['field']) ? $values['field'] : 1;
+  if ($url->fields > 1) {
+    $values['field'] = isset($values['field']) ? $values['field'] : 1;
+  }
   return $values;
 }
 
@@ -143,7 +145,8 @@ function islandora_autocomplete_view_form_table_header($values) {
  */
 function islandora_autocomplete_view_form_table_rows($values) {
   $url = islandora_autocomplete_db_get_url_by_name($values['name']);
-  $results = islandora_autocomplete_query_source($url->id, $url->source, $values['query'], $values['field'] - 1); // Count the offset
+  $index = isset($values['field']) ? $values['field'] : NULL;
+  $results = islandora_autocomplete_query_source($url->id, $url->source, $values['query'], $index); // Count the offset
   $rows = array();
   if ($url->fields == 1) {
     foreach ($results as $key => $value) {
