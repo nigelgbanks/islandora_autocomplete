@@ -257,12 +257,10 @@ Drupal.jsACMulti.prototype.formatMatch = function(settings, match) {
   }
   else {
     var output = settings.format;
-    output = output.replace(/\\v0/, match[settings.index][0]);
-    output = output.replace(/\\l0/, match[settings.index][1]);
     match.forEach(function(item, index) {
-      var regex = new RegExp("\\\\v" + (index + 1));
+      var regex = new RegExp("\\\\v" + (index));
       output = output.replace(regex, item[0]);
-      regex = new RegExp("\\\\l" + (index + 1));
+      regex = new RegExp("\\\\l" + (index));
       output = output.replace(regex, item[1]);
     });
     return output;
