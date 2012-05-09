@@ -15,7 +15,7 @@
  * @param string $query
  *   The search query for the autocomplete.
  */
-function islandora_autocomplete_query($name, $query = '', $index = 0) {
+function islandora_autocomplete_query($name, $query = '', $index = NULL) {
   module_load_include('inc', 'islandora_autocomplete', 'includes/islandora_autocomplete.db');
   $url = islandora_autocomplete_db_get_url_by_name($name);
   $results = $url ? islandora_autocomplete_query_source($url->id, $url->source, $query, $index) : array();
@@ -39,6 +39,5 @@ function islandora_autocomplete_query($name, $query = '', $index = 0) {
 function islandora_autocomplete_query_source($id, $source, $query, $index = NULL) {
   $query_hook = "islandora_autocomplete_url_query_{$source}";
   $results = function_exists($query_hook) ? call_user_func($query_hook, $id, $query, $index) : array();
-  asort($results); // Sort alphabetically.
   return $results;
 }

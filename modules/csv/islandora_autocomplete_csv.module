@@ -69,6 +69,7 @@ function islandora_autocomplete_url_query_csv($url_id, $query = '', $index = NUL
             $fields[$k] = $v;
           }
         }
+        asort($fields); // Sort alphabetically.
       }
       else {
         while ($field = fgetcsv($handle)) {
