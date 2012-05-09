@@ -145,7 +145,7 @@ function islandora_autocomplete_view_form_table_header($values) {
  */
 function islandora_autocomplete_view_form_table_rows($values) {
   $url = islandora_autocomplete_db_get_url_by_name($values['name']);
-  $index = isset($values['field']) ? $values['field'] : NULL;
+  $index = isset($values['field']) ? $values['field'] - 1 : NULL;
   $results = islandora_autocomplete_query_source($url->id, $url->source, $values['query'], $index); // Count the offset
   $rows = array();
   if ($url->fields == 1) {
