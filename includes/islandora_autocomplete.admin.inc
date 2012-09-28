@@ -211,7 +211,7 @@ function islandora_autocomplete_form(array &$form_state, $name = '') {
    * This allows the various source forms to use ahah elements, if this isn't included the Drupal.settings array will not be populated with the correct information
    */
   $sources = islandora_autocomplete_source_form_options();
-  foreach($sources as $source) {
+  foreach($sources as $source => $label) {
     islandora_autocomplete_source_form($form_state, $values['url_id'], $source);
   }
   return array(
