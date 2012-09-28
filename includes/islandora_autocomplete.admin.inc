@@ -207,6 +207,13 @@ function islandora_autocomplete_form(array &$form_state, $name = '') {
     drupal_set_message(t('No sources are defined, please install a module like "islandora autocomplete csv" so that a source can be defined.'), 'error');
     return array();
   }
+  /**
+   * This allows the various source forms to use ahah elements, if this isn't included the Drupal.settings array will not be populated with the correct information
+   */
+  $sources = islandora_autocomplete_source_form_options();
+  foreach($sources as $source) {
+    islandora_autocomplete_source_form($form_state, $values['url_id'], $source);
+  }
   return array(
     '#action' => empty($name) ? MENU_ISLANDORA_AUTOCOMPLETE_ADD_URL : str_replace('%', $name, MENU_ISLANDORA_AUTOCOMPLETE_URL),
     '#attributes' => array(
